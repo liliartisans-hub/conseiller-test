@@ -56,7 +56,11 @@
   champCode.addEventListener('input', () => { try { sessionStorage.setItem('code', champCode.value.trim()); } catch (e) {} });
 
   const echapper = s => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const lier = s => echapper(s).replace(/https:\/\/maisondesire\.com\/products\/[\w-]+/g, u => `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`);
+  // v5 : « [Nom — prix](adresse) » (écrit par le code) devient un lien cliquable ; aucune adresse affichée.
+  const ADRESSE_BOUTIQUE = 'https:\\/\\/maisondesire\\.com\\/[\\w\\/-]*';
+  const lier = s => echapper(s)
+    .replace(new RegExp('\\[([^\\]]+)\\]\\((' + ADRESSE_BOUTIQUE + ')\\)', 'g'), (m, t, u) => `<a href="${u}" target="_blank" rel="noopener noreferrer">${t}</a>`)
+    .replace(new RegExp('(?<!href=")' + ADRESSE_BOUTIQUE + '(?![\\w\\/-])', 'g'), u => `<a href="${u}" target="_blank" rel="noopener noreferrer">voir la bouteille</a>`);
   function ajouter(classe, html) {
     const d = document.createElement('div'); d.className = 'msg ' + classe; d.innerHTML = html; fil.appendChild(d);
     fil.scrollTop = fil.scrollHeight; return d;
