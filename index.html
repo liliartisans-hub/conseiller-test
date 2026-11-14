@@ -27,6 +27,14 @@
   .conseiller { background: var(--carte); border: 1px solid var(--bord); margin-right: 6%; }
   .conseiller a { color: var(--accent); }
   .erreur { background: #fff3f1; border: 1px solid #e3b4ad; color: #7b2d26; }
+  /* E14 : bulle d'attente écrite par la page (aucune IA), remplacée par la réponse vérifiée. */
+  .attente { color: var(--doux); font-style: italic; display: flex; align-items: center; gap: 10px; }
+  .points { display: inline-flex; gap: 4px; flex: none; }
+  .points i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); opacity: .25; animation: pulse 1.2s infinite ease-in-out; }
+  .points i:nth-child(2) { animation-delay: .2s; }
+  .points i:nth-child(3) { animation-delay: .4s; }
+  @keyframes pulse { 0%, 80%, 100% { opacity: .25; transform: scale(.85); } 40% { opacity: 1; transform: scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .points i { animation: none; opacity: .6; } }
   form#f { display: flex; gap: 8px; padding: 10px 16px; max-width: 760px; width: 100%; margin: 0 auto; }
   input { padding: 10px; border: 1px solid var(--bord); border-radius: 8px; font: inherit; font-size: 16px; min-width: 0; }
   #m { flex: 1; }
@@ -73,16 +81,19 @@
     if (!code) { ajouter('erreur', "Saisissez d'abord le code d'accès."); champCode.focus(); return; }
     champ.value = '';
     ajouter('client', echapper(message));
-    const attente = ajouter('conseiller', '…');
+    // E14 : bulle d'attente écrite par la page (jamais de texte mot à mot avant la vérification) ; après ~4 s, un 2e message.
+    const attente = ajouter('conseiller attente', '<span class="points" aria-hidden="true"><i></i><i></i><i></i></span><span class="etat">Je regarde dans le catalogue…</span>');
+    const relais = setTimeout(() => { const e = attente.querySelector('.etat'); if (e) e.textContent = 'Je compare quelques bouteilles pour vous…'; }, 4000);
     bouton.disabled = true;
     try {
       const r = await fetch(ADRESSE, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code, session, message }) });
       const s = await r.json().catch(() => ({}));
       if (!r.ok) { attente.className = 'msg erreur'; attente.textContent = s.erreur || 'Le conseiller ne répond pas. Réessayez dans un instant.'; return; }
+      attente.className = 'msg conseiller';
       attente.innerHTML = lier(s.texte_affiche);
     } catch (err) {
       attente.className = 'msg erreur'; attente.textContent = 'Connexion impossible. Vérifiez votre réseau et réessayez.';
-    } finally { bouton.disabled = false; }
+    } finally { clearTimeout(relais); bouton.disabled = false; fil.scrollTop = fil.scrollHeight; }
   });
   document.getElementById('raz').addEventListener('click', () => { session = nouvelleSession(); fil.innerHTML = ''; });
 </script>
