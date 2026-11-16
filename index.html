@@ -9,7 +9,7 @@
 <title>Conseiller cave — test</title>
 <!-- Page de test privée. AUCUNE clé ici : seulement l'adresse de la fonction ; le code d'accès est saisi par la personne qui teste. -->
 <style>
-  :root { --fond: #f7f4ef; --carte: #fff; --texte: #2a2420; --doux: #6f645b; --accent: #7b2d26; --bord: #e2dbd2; --bandeau: #2a2420; }
+  :root { --fond: #f7f4ef; --carte: #fff; --texte: #2a2420; --doux: #6f645b; --accent: #7b2d26; --bord: #e2dbd2; }
   * { box-sizing: border-box; }
   html, body { height: 100%; }
   body { margin: 0; font: 17px/1.5 system-ui, -apple-system, sans-serif; background: var(--fond); color: var(--texte);
@@ -40,7 +40,8 @@
   #m { flex: 1; }
   .envoyer { padding: 10px 16px; border: 0; border-radius: 8px; background: var(--accent); color: #fff; }
   .envoyer:disabled { opacity: .5; }
-  footer { background: var(--bandeau); color: #fff; text-align: center; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); font-size: 14px; }
+  /* E17 : plus de bandeau permanent en bas (la mention sanitaire est à la fin de chaque réponse) ; marge du bas du téléphone. */
+  form#f { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
 </style>
 </head>
 <body>
@@ -51,7 +52,6 @@
 </div>
 <div id="fil" aria-live="polite"></div>
 <form id="f"><input id="m" autocomplete="off" placeholder="Votre question…" maxlength="1000" required><button class="envoyer" id="envoyer">Envoyer</button></form>
-<footer>L'abus d'alcool est dangereux pour la santé, à consommer avec modération.</footer>
 <script>
   const ADRESSE = 'https://bcntaxpxhyyhgrlhekmn.supabase.co/functions/v1/conseiller';
   const fil = document.getElementById('fil');
