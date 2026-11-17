@@ -42,6 +42,10 @@
   .envoyer:disabled { opacity: .5; }
   /* E17 : plus de bandeau permanent en bas (la mention sanitaire est à la fin de chaque réponse) ; marge du bas du téléphone. */
   form#f { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+  /* E18 : « Ce que j'ai compris » (page de test seulement) : la fiche de suivi en français simple, repliée par défaut. */
+  .compris { margin: -4px 6% 10px 0; font-size: 14px; color: var(--doux); }
+  .compris summary { cursor: pointer; width: fit-content; }
+  .compris div { white-space: pre-wrap; margin-top: 4px; padding: 8px 12px; border: 1px dashed var(--bord); border-radius: 10px; background: var(--carte); }
 </style>
 </head>
 <body>
@@ -91,6 +95,13 @@
       if (!r.ok) { attente.className = 'msg erreur'; attente.textContent = s.erreur || 'Le conseiller ne répond pas. Réessayez dans un instant.'; return; }
       attente.className = 'msg conseiller';
       attente.innerHTML = lier(s.texte_affiche);
+      // E18 : la fiche de suivi, envoyée seulement avec le code d'accès de test (jamais sur le site de la boutique).
+      if (s.compris) {
+        const d = document.createElement('details'); d.className = 'compris';
+        const t = document.createElement('summary'); t.textContent = "Ce que j'ai compris";
+        const c = document.createElement('div'); c.textContent = s.compris;
+        d.append(t, c); attente.after(d);
+      }
     } catch (err) {
       attente.className = 'msg erreur'; attente.textContent = 'Connexion impossible. Vérifiez votre réseau et réessayez.';
     } finally { clearTimeout(relais); bouton.disabled = false; fil.scrollTop = fil.scrollHeight; }
