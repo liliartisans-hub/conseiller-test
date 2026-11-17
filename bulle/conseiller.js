@@ -12,7 +12,9 @@
 
   var ADRESSE = 'https://bcntaxpxhyyhgrlhekmn.supabase.co/functions/v1/conseiller';
   var ACCUEIL = 'Bonjour ! Je vous aide à choisir une bouteille de la cave. Dites-moi pour qui, pour quelle occasion, et votre budget si vous en avez un.';
-  var TRES_DEMANDE = 'Le conseiller est très demandé, réessayez plus tard ou appelez la boutique au 05 56 93 06 04.';
+  // E19 (test réel du 17/11) : une erreur technique n'est JAMAIS présentée comme une limite (« très demandé » : seulement quand la
+  // fonction le dit elle-même) ; message honnête à la place.
+  var ERREUR_TECHNIQUE = 'Je n’arrive pas à répondre pour l’instant, la boutique vous renseigne au 05 56 93 06 04.';
   var INVITATION = 'Un cadeau à trouver, une bouteille à découvrir ? Je vous aide en 30 secondes.';
   var LIEN_FICHE = 'Une question sur cette bouteille ? Des bouteilles proches ? Demandez à notre caviste (IA)';
   var SUGGESTIONS = [['Un cadeau', 'Je cherche une bouteille à offrir'], ['Pour débuter', 'Je débute, que me conseillez-vous ?'],
@@ -262,8 +264,8 @@
     var corps = { session: etat.session, message: message };
     if (fiche) corps.fiche = fiche;
     return w.fetch(ADRESSE, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'omit', body: JSON.stringify(corps) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (s) { return r.ok && s.texte_affiche ? s.texte_affiche : TRES_DEMANDE; }); })
-      .catch(function () { return TRES_DEMANDE; });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (s) { return r.ok && s.texte_affiche ? s.texte_affiche : ERREUR_TECHNIQUE; }); })
+      .catch(function () { return ERREUR_TECHNIQUE; });
   }
 
   // Invitation : 10 s et interaction du visiteur (défilement, clic, toucher, clavier) comptés dès le chargement de la page,
