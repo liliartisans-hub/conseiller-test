@@ -1,4 +1,4 @@
-/* Conseiller virtuel (IA) de la cave Maison Désiré — bulle du site (P1, P2 « une bulle qui donne envie »).
+/* Notre caviste virtuel (IA) de la cave Maison Désiré — bulle du site (P1, P2 « une bulle qui donne envie »).
  * Fichier autonome, chargé dans le thème par : <script src="https://liliartisans-hub.github.io/conseiller-test/bulle/conseiller.js" defer></script>
  * AUCUNE clé ni code d'accès ici : seulement l'adresse publique de la fonction. Aucun cookie : l'identifiant de conversation,
  * le fil et l'invitation déjà vue restent dans l'onglet (sessionStorage), effacés à sa fermeture. Si le conseiller est éteint
@@ -159,8 +159,8 @@
     var bouton = el('button', { classe: 'envoyer', type: 'submit', texte: 'Envoyer' });
     var form = el('form', {}, [champ, bouton]);
     var fermer = el('button', { classe: 'fermer', type: 'button', 'aria-label': 'Fermer', texte: '×' });
-    var panneau = el('section', { classe: 'panneau', role: 'dialog', 'aria-label': 'Conseiller virtuel (IA)' }, [
-      el('header', {}, [el('strong', { texte: 'Conseiller virtuel (IA)' }), fermer]), fil, form]);
+    var panneau = el('section', { classe: 'panneau', role: 'dialog', 'aria-label': 'Notre caviste virtuel (IA)' }, [
+      el('header', {}, [el('strong', { texte: 'Notre caviste virtuel (IA)' }), fermer]), fil, form]);
     panneau.hidden = true;
     [el('style', { texte: CSS }), lanceur, invitation, panneau].forEach(function (e) { racine.appendChild(e); });
 
