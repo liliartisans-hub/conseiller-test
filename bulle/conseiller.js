@@ -1,4 +1,4 @@
-/* Notre caviste virtuel (IA) de la cave Maison Désiré — bulle du site (P1, P2 « une bulle qui donne envie »).
+/* La cave à conseils (IA) de la cave Maison Désiré — bulle du site (P1, P2 « une bulle qui donne envie », P3 cartes bouteille).
  * Fichier autonome, chargé dans le thème par : <script src="https://liliartisans-hub.github.io/conseiller-test/bulle/conseiller.js" defer></script>
  * AUCUNE clé ni code d'accès ici : seulement l'adresse publique de la fonction. Aucun cookie : l'identifiant de conversation,
  * le fil et l'invitation déjà vue restent dans l'onglet (sessionStorage), effacés à sa fermeture. Si le conseiller est éteint
@@ -11,12 +11,27 @@
   w.__conseillerMaisonDesire = true;
 
   var ADRESSE = 'https://bcntaxpxhyyhgrlhekmn.supabase.co/functions/v1/conseiller';
-  var ACCUEIL = 'Bonjour ! Je vous aide à choisir une bouteille de la cave. Dites-moi pour qui, pour quelle occasion, et votre budget si vous en avez un.';
+  var NOM = 'La cave à conseils';
+  // P3 (7) : nombres calculés par la fonction (jamais écrits ici), arrondis à la centaine inférieure ; sans nombre, sans chiffre.
+  var nombres = null;
+  // Typographie française : espace insécable dans les milliers, avant « : ? ! ; » et entre les chiffres d'un numéro.
+  function insecable(s) { return String(s).replace(/ ([:?!;»])/g, ' $1').replace(/(\d) (?=\d)/g, '$1 '); }
+  function milliers(x) { return String(x).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function texteAccueil() {
+    return insecable(nombres && nombres.total > 0
+      ? 'Bonjour ! Je connais toute la cave : les bouteilles du site et plus de ' + milliers(nombres.total) + ' références de la boutique. Dites-moi pour qui, pour quelle occasion, et votre budget si vous en avez un.'
+      : 'Bonjour ! Je connais toute la cave, en ligne et en boutique. Dites-moi pour qui, pour quelle occasion, et votre budget si vous en avez un.');
+  }
+  function texteInvitationCourant() {
+    return insecable(nombres && nombres.total > 0
+      ? 'Plus de ' + milliers(nombres.total) + ' bouteilles de la boutique, bien plus que sur le site : je vous aide à choisir.'
+      : 'Toute la cave de la boutique, bien plus que sur le site : je vous aide à choisir.');
+  }
   // E19 (test réel du 17/11) : une erreur technique n'est JAMAIS présentée comme une limite (« très demandé » : seulement quand la
   // fonction le dit elle-même) ; message honnête à la place.
   var ERREUR_TECHNIQUE = 'Je n’arrive pas à répondre pour l’instant, la boutique vous renseigne au 05 56 93 06 04.';
-  var INVITATION = 'Un cadeau à trouver, une bouteille à découvrir ? Je vous aide en 30 secondes.';
-  var LIEN_FICHE = 'Une question sur cette bouteille ? Des bouteilles proches ? Demandez à notre caviste (IA)';
+  var MENTION_SANITAIRE = 'L\'abus d\'alcool est dangereux pour la santé, à consommer avec modération.';
+  var LIEN_FICHE = 'Une question sur cette bouteille ? Des bouteilles proches ? → La cave à conseils (IA)';
   var SUGGESTIONS = [['Un cadeau', 'Je cherche une bouteille à offrir'], ['Pour débuter', 'Je débute, que me conseillez-vous ?'],
     ['Un whisky tourbé', 'Un whisky tourbé'], ['Avec un plat', 'Que servir avec mon repas ?'], ['Un apéritif', 'Une idée pour l\'apéritif']];
   var SUGGESTIONS_FICHE = [['Parlez-moi de cette bouteille', 'Parlez-moi de cette bouteille'], ['Des bouteilles proches', 'Des bouteilles proches']];
@@ -108,9 +123,35 @@
     ' height:min(560px,calc(100dvh - 32px));display:flex;flex-direction:column;background:#f7f4ef;color:#2a2420;border:1px solid #e2dbd2;',
     ' border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);overflow:hidden;font-size:15px;line-height:1.45}',
     '@media (max-width:420px){.panneau{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));height:calc(100dvh - 16px)}}',
-    'header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #e2dbd2}',
-    'header strong{font-size:15px}',
-    '.fermer{border:0;background:none;font-size:22px;line-height:1;cursor:pointer;color:#6f645b;padding:4px 8px}',
+    'header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #e2dbd2}',
+    'header .titre{font-size:15px;font-weight:700;color:#2a2420}',
+    'header .outils{margin-left:auto;display:flex;align-items:center;gap:2px}',
+    '.fermer,.agrandir,.nouvelle{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:#6f645b;padding:4px 8px;border-radius:6px}',
+    '.fermer{font-size:22px}',
+    '.fermer:hover,.agrandir:hover,.nouvelle:hover,.fermer:focus-visible,.agrandir:focus-visible,.nouvelle:focus-visible{background:#f3e9dc;color:#7b2d26}',
+    // P3 (5) : agrandi sur ordinateur, ≈ 720 px de large et 85 % de la hauteur, centré à droite ; téléphone : déjà plein écran.
+    '.panneau.grand{width:min(720px,calc(100vw - 32px));height:85vh;bottom:7.5vh}',
+    '@media (max-width:420px){.agrandir{display:none}}',
+    // P3 (2) : cartes bouteille (bordeaux #7b2d26, crème), lisibles à 375 px.
+    '.reponse{margin:8px 0;margin-right:6%}',
+    '.reponse .texte{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;padding:8px 12px;background:#fff;border:1px solid #e2dbd2;border-radius:12px}',
+    '.reponse .texte a{color:#7b2d26}',
+    '.carte{background:#fff;border:1px solid #e2dbd2;border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}',
+    '.carte.premiere{border-color:#7b2d26;box-shadow:0 0 0 1px #7b2d26 inset}',
+    '.carte .suggestion{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#7b2d26;margin-bottom:4px}',
+    '.carte .ligne{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}',
+    '.carte .nom{font-weight:700;font-size:15px;line-height:1.3;overflow-wrap:anywhere}',
+    '.carte .prix{flex:none;text-align:right;font-weight:700;font-size:16px;color:#7b2d26;white-space:nowrap}',
+    '.carte .prix small{display:block;font-weight:400;font-size:11px;color:#6f645b}',
+    '.carte .faits{font-size:13px;color:#6f645b;margin-top:2px}',
+    '.carte .phrase{margin:6px 0 0;font-size:14px;line-height:1.45}',
+    '.carte .bas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}',
+    '.carte .etiquette,.carte .rare{display:inline-block;font-size:12px;border-radius:999px;padding:3px 9px;background:#f3e9dc;color:#7b2d26;font-weight:600}',
+    '.carte .rare{background:#fff;border:1px solid #c9a227;color:#7a5d00}',
+    '.carte a.voir{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:5px 12px;background:#7b2d26;color:#fff;text-decoration:none}',
+    '.carte a.voir:hover,.carte a.voir:focus-visible{background:#5f211c}',
+    '.mention-boutique{font-size:12px;color:#6f645b;margin:4px 2px 8px}',
+    '.sanitaire{font-size:11px;color:#6f645b;margin:2px 2px 10px}',
     '.fil{flex:1;overflow-y:auto;padding:10px 12px}',
     '.msg{margin:8px 0;padding:8px 12px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}',
     '.client{background:#7b2d26;color:#fff;margin-left:14%}',
@@ -148,10 +189,11 @@
     var hote = el('div', { id: 'conseiller-maison-desire' });
     var racine = hote.attachShadow ? hote.attachShadow({ mode: 'closed' }) : hote;
     var icone = el('span', { classe: 'icone' }); icone.innerHTML = ICONE;
-    var lanceur = el('button', { classe: 'lanceur', type: 'button', 'aria-label': 'Un conseil ? Demandez à notre caviste, conseiller virtuel (IA)' }, [
-      icone, el('span', { classe: 'long', texte: 'Un conseil ? Demandez à notre caviste' }), el('span', { classe: 'court', texte: 'Conseil' }),
+    // P3 (1) : « La cave à conseils » + « IA » (toujours visible, obligation d'information) ; « Conseils » sur téléphone.
+    var lanceur = el('button', { classe: 'lanceur', type: 'button', 'aria-label': NOM + ', conseiller virtuel (IA)' }, [
+      icone, el('span', { classe: 'long', texte: NOM }), el('span', { classe: 'court', texte: 'Conseils' }),
       el('span', { classe: 'ia', texte: 'IA' })]);
-    var texteInvitation = el('p', { texte: INVITATION });
+    var texteInvitation = el('p', { texte: texteInvitationCourant() });
     var croix = el('button', { classe: 'croix', type: 'button', 'aria-label': 'Fermer l\'invitation', texte: '×' });
     var invitation = el('div', { classe: 'invitation', role: 'status' }, [texteInvitation, croix]);
     invitation.hidden = true;
@@ -161,8 +203,12 @@
     var bouton = el('button', { classe: 'envoyer', type: 'submit', texte: 'Envoyer' });
     var form = el('form', {}, [champ, bouton]);
     var fermer = el('button', { classe: 'fermer', type: 'button', 'aria-label': 'Fermer', texte: '×' });
-    var panneau = el('section', { classe: 'panneau', role: 'dialog', 'aria-label': 'Notre caviste virtuel (IA)' }, [
-      el('header', {}, [el('strong', { texte: 'Notre caviste virtuel (IA)' }), fermer]), fil, form]);
+    // P3 (5) : agrandir / réduire (ordinateur) et nouvelle conversation.
+    var agrandir = el('button', { classe: 'agrandir', type: 'button', 'aria-label': 'Agrandir', 'aria-pressed': 'false', title: 'Agrandir', texte: '⤢' });
+    var nouvelle = el('button', { classe: 'nouvelle', type: 'button', 'aria-label': 'Nouvelle conversation', title: 'Nouvelle conversation', texte: '↺' });
+    var panneau = el('section', { classe: 'panneau', role: 'dialog', 'aria-label': NOM + ' (IA)' }, [
+      el('header', {}, [el('strong', { classe: 'titre', texte: NOM }), el('span', { classe: 'ia', texte: 'IA' }),
+        el('span', { classe: 'outils' }, [nouvelle, agrandir, fermer])]), fil, form]);
     panneau.hidden = true;
     [el('style', { texte: CSS }), lanceur, invitation, panneau].forEach(function (e) { racine.appendChild(e); });
 
@@ -172,6 +218,39 @@
     function bulle(classe, html) {
       var m = el('div', { classe: 'msg ' + classe }); m.innerHTML = html; fil.appendChild(m);
       fil.scrollTop = fil.scrollHeight; return m;
+    }
+    // P3 (2) : réponse en blocs — texte, cartes bouteille (construites élément par élément, jamais de HTML venu de la
+    // fonction), mention de la boutique, puis la mention sanitaire.
+    function carte(c) {
+      var haut = [];
+      if (c.suggestion) haut.push(el('span', { classe: 'suggestion', texte: 'Notre suggestion' }));
+      var prix = el('span', { classe: 'prix', texte: String(c.prix || '') });
+      if (c.indicatif) prix.appendChild(el('small', { texte: 'prix indicatif' }));
+      var bas = [];
+      if (c.boutique) bas.push(el('span', { classe: 'etiquette', texte: 'En boutique uniquement' }));
+      else if (c.url && new RegExp('^' + BOUTIQUE + '$').test(c.url)) bas.push(el('a', { classe: 'voir', href: c.url, texte: 'Voir la bouteille' }));
+      if (c.rare) bas.push(el('span', { classe: 'rare', texte: 'Pièce rare' }));
+      var enfants = haut.concat([el('div', { classe: 'ligne' }, [el('span', { classe: 'nom', texte: String(c.nom || '') }), prix])]);
+      if (c.faits) enfants.push(el('div', { classe: 'faits', texte: String(c.faits) }));
+      if (c.phrase) enfants.push(el('p', { classe: 'phrase', texte: insecable(c.phrase) }));
+      if (bas.length) enfants.push(el('div', { classe: 'bas' }, bas));
+      return el('div', { classe: 'carte' + (c.suggestion ? ' premiere' : '') }, enfants);
+    }
+    function rendreBlocs(conteneur, blocs, sanitaire) {
+      conteneur.className = 'reponse';
+      conteneur.textContent = '';
+      blocs.forEach(function (b) {
+        if (!b) return;
+        if (b.type === 'cartes' && Array.isArray(b.cartes)) b.cartes.forEach(function (c) { conteneur.appendChild(carte(c)); });
+        else if (b.type === 'mention') conteneur.appendChild(el('p', { classe: 'mention-boutique', texte: insecable(b.texte || '') }));
+        else if (b.type === 'texte') { var t = el('div', { classe: 'msg texte' }); t.innerHTML = lier(insecable(b.texte || '')); conteneur.appendChild(t); }
+      });
+      conteneur.appendChild(el('p', { classe: 'sanitaire', texte: sanitaire || MENTION_SANITAIRE }));
+      return conteneur;
+    }
+    function afficherReponse(conteneur, r) {
+      if (r.blocs && r.blocs.length) rendreBlocs(conteneur, r.blocs, r.sanitaire);
+      else { conteneur.className = 'msg conseiller'; conteneur.innerHTML = lier(r.texte); }
     }
     // Suggestions : sous l'accueil tant qu'aucun message n'est envoyé ; celles de la fiche quand on vient du lien de la fiche.
     function proposer(liste, avecFiche) {
@@ -222,11 +301,40 @@
       placer(); insererLienFiche(); verifierInvitation();
     }
 
-    bulle('conseiller', echapper(ACCUEIL));
-    etat.fil.forEach(function (m) { bulle(m.qui, m.qui === 'client' ? echapper(m.texte) : lier(m.texte)); });
-    if (!etat.fil.length) proposer(SUGGESTIONS, false);
+    function accueillir() {
+      bulle('conseiller', echapper(texteAccueil()));
+      etat.fil.forEach(function (m) {
+        if (m.qui === 'client') bulle('client', echapper(m.texte));
+        else afficherReponse(bulle('conseiller', ''), m);
+      });
+      if (!etat.fil.length) proposer(SUGGESTIONS, false);
+    }
+    accueillir();
     lanceur.addEventListener('click', function () { ouvrir(true); });
     fermer.addEventListener('click', function () { ouvrir(false); });
+    // Taille gardée pendant la visite (onglet), comme le fil.
+    function taille(grand) {
+      panneau.className = grand ? 'panneau grand' : 'panneau';
+      agrandir.setAttribute('aria-pressed', grand ? 'true' : 'false');
+      agrandir.setAttribute('aria-label', grand ? 'Réduire' : 'Agrandir');
+      agrandir.setAttribute('title', grand ? 'Réduire' : 'Agrandir');
+      fil.scrollTop = fil.scrollHeight;
+    }
+    taille(!!etat.grand);
+    agrandir.addEventListener('click', function () {
+      etat.grand = !/\bgrand\b/.test(panneau.className); ecrire(etat);
+      taille(etat.grand);
+    });
+    // Nouvelle conversation : nouvel identifiant (la fonction repart d'une fiche de suivi vide), fil effacé, accueil et
+    // suggestions réaffichés. L'invitation déjà vue le reste.
+    nouvelle.addEventListener('click', function () {
+      if (bouton.disabled) return;
+      etat = { session: uuid(), fil: [], ouvert: true, invitation: etat.invitation, grand: etat.grand };
+      ecrire(etat);
+      fil.textContent = '';
+      accueillir();
+      champ.focus();
+    });
     texteInvitation.addEventListener('click', function () { ouvrir(true); });
     croix.addEventListener('click', function () { etat.invitation = 'fermee'; ecrire(etat); cacherInvitation(); });
 
@@ -239,9 +347,12 @@
       var attente = bulle('conseiller attente', '<span class="points" aria-hidden="true"><i></i><i></i><i></i></span><span class="etat">Je regarde dans le catalogue…</span>');
       var relais = setTimeout(function () { var x = attente.querySelector('.etat'); if (x) x.textContent = 'Je compare quelques bouteilles pour vous…'; }, 4000);
       bouton.disabled = true;
-      return envoyer(message, ficheEnvoyee).then(function (texte) {
-        attente.className = 'msg conseiller'; attente.innerHTML = lier(texte);
-        etat.fil.push({ qui: 'conseiller', texte: texte }); etat.fil = etat.fil.slice(-40); ecrire(etat);
+      var session = etat.session;
+      return envoyerComplet(message, ficheEnvoyee).then(function (r) {
+        if (session !== etat.session) { attente.remove(); return; } // nouvelle conversation entre-temps
+        afficherReponse(attente, r);
+        etat.fil.push(r.blocs ? { qui: 'conseiller', texte: r.texte, blocs: r.blocs, sanitaire: r.sanitaire } : { qui: 'conseiller', texte: r.texte });
+        etat.fil = etat.fil.slice(-40); ecrire(etat);
       }).then(function () { clearTimeout(relais); bouton.disabled = false; fil.scrollTop = fil.scrollHeight; });
     }
     form.addEventListener('submit', function (e) {
@@ -260,13 +371,21 @@
   }
 
   // Envoi : jamais de code d'accès, jamais d'erreur technique affichée (message poli à la place).
-  function envoyer(message, fiche) {
+  // P3 : la réponse complète (texte de secours avec la mention sanitaire, blocs avec les cartes, mention sanitaire).
+  function envoyerComplet(message, fiche) {
     var corps = { session: etat.session, message: message };
     if (fiche) corps.fiche = fiche;
     return w.fetch(ADRESSE, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'omit', body: JSON.stringify(corps) })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (s) { return r.ok && s.texte_affiche ? s.texte_affiche : ERREUR_TECHNIQUE; }); })
-      .catch(function () { return ERREUR_TECHNIQUE; });
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (s) {
+          if (!r.ok || !s.texte_affiche) return { texte: ERREUR_TECHNIQUE };
+          var blocs = Array.isArray(s.blocs) && s.blocs.length ? s.blocs : null;
+          return blocs ? { texte: s.texte_affiche, blocs: blocs, sanitaire: s.message_sanitaire || MENTION_SANITAIRE } : { texte: s.texte_affiche };
+        });
+      })
+      .catch(function () { return { texte: ERREUR_TECHNIQUE }; });
   }
+  function envoyer(message, fiche) { return envoyerComplet(message, fiche).then(function (r) { return r.texte; }); }
 
   // Invitation : 10 s et interaction du visiteur (défilement, clic, toucher, clavier) comptés dès le chargement de la page,
   // même avant l'affichage de la bulle.
@@ -282,7 +401,13 @@
     var minuterie = setTimeout(function () { fini = true; }, 4000);
     w.fetch(ADRESSE, { method: 'GET', credentials: 'omit' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (s) { clearTimeout(minuterie); if (!fini && s && s.actif === true && d.body) monter(); })
+      .then(function (s) {
+        clearTimeout(minuterie);
+        if (fini || !s || s.actif !== true || !d.body) return;
+        var nb = s.nombres;
+        if (nb && typeof nb.total === 'number' && isFinite(nb.total) && nb.total > 0) nombres = { total: Math.floor(nb.total) };
+        monter();
+      })
       .catch(function () { clearTimeout(minuterie); });
   }
 
