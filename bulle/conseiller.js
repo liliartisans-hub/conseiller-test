@@ -141,16 +141,14 @@
     '.carte .prix small{display:block;font-weight:400;font-size:11px;color:#6b6b6b}',
     '.carte .faits{font-size:13px;color:#6b6b6b;margin-top:3px}',
     '.carte .phrase{margin:8px 0 0;font-size:14px;line-height:1.5;color:#181414}',
-    '.carte .bas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}',
+    '.carte .bas{display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-top:10px;white-space:nowrap}',
     '.carte .etiquette,.carte .rare{display:inline-block;font-size:12px;border-radius:100px;padding:3px 10px;background:#f2f2f2;color:#000;font-weight:500}',
     '.carte .rare{background:#fff;border:1px solid #000}',
     '.carte a.voir{display:inline-block;font-size:13px;font-weight:400;border-radius:var(--md-rayon);padding:7px 14px;background:#000;color:#fff;text-decoration:none}',
     '.carte a.voir:hover,.carte a.voir:focus-visible{background:#333}',
-    // P4 (3) : cartes « boutique » — appeler ou écrire à la boutique (boutons discrets).
-    '.carte .agir{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
-    '.carte .agir a{display:inline-block;font-size:13px;border-radius:var(--md-rayon);padding:6px 12px;background:#fff;color:#000;border:1px solid #e6e6e6;text-decoration:none}',
-    '.carte .agir a:hover,.carte .agir a:focus-visible{border-color:#000}',
-    '@media (max-width:420px){.numero{display:none}}',
+    // P6 : « Appeler » et « E-mail » : petits liens discrets, sur la ligne de l'étiquette (jamais de gros boutons).
+    '.carte .bas a.appeler,.carte .bas a.courriel{font-size:12px;color:#6b6b6b;text-decoration:underline;text-underline-offset:2px;padding:2px 0;background:none;border:0}',
+    '.carte .bas a.appeler:hover,.carte .bas a.courriel:hover,.carte .bas a.appeler:focus-visible,.carte .bas a.courriel:focus-visible{color:#000}',
     '.mention-boutique{font-size:12px;line-height:1.5;color:#6b6b6b;margin:4px 2px 8px}',
     '.sanitaire{font-size:11px;color:#6b6b6b;margin:2px 2px 10px}',
     '.fil{flex:1;overflow-y:auto;padding:12px 14px;background:#fff}',
@@ -266,15 +264,16 @@
       if (c.boutique) bas.push(el('span', { classe: 'etiquette', texte: 'En boutique uniquement' }));
       else if (c.url && new RegExp('^' + BOUTIQUE + '$').test(c.url)) bas.push(el('a', { classe: 'voir', href: c.url, texte: 'Voir la bouteille' }));
       if (c.rare) bas.push(el('span', { classe: 'rare', texte: 'Pièce rare' }));
+      // P4 (3) → P6 : appeler ou écrire à la boutique, cartes « boutique » seulement : deux petits liens discrets sur la même
+      // ligne que l'étiquette « En boutique uniquement » (libellé complet pour les lecteurs d'écran).
+      if (c.boutique) {
+        bas.push(el('a', { classe: 'appeler', href: 'tel:' + TEL, 'aria-label': 'Appeler la boutique au ' + TEL_AFFICHE, texte: 'Appeler' }));
+        bas.push(el('a', { classe: 'courriel', href: lienCourriel(c), 'aria-label': 'Demander à la boutique par e-mail', texte: 'E-mail' }));
+      }
       var enfants = haut.concat([el('div', { classe: 'ligne' }, [el('span', { classe: 'nom', texte: String(c.nom || '') }), prix])]);
       if (c.faits) enfants.push(el('div', { classe: 'faits', texte: String(c.faits) }));
       if (c.phrase) enfants.push(el('p', { classe: 'phrase', texte: insecable(c.phrase) }));
       if (bas.length) enfants.push(el('div', { classe: 'bas' }, bas));
-      // P4 (3) : appeler ou écrire à la boutique, sur les cartes « boutique » seulement (numéro en clair sur ordinateur).
-      if (c.boutique) {
-        var appeler = el('a', { classe: 'appeler', href: 'tel:' + TEL }, [el('span', { texte: 'Appeler la boutique' }), el('span', { classe: 'numero', texte: insecable(' · ' + TEL_AFFICHE) })]);
-        enfants.push(el('div', { classe: 'agir' }, [appeler, el('a', { classe: 'courriel', href: lienCourriel(c), texte: 'Demander par e-mail' })]));
-      }
       return el('div', { classe: 'carte' + (c.suggestion ? ' premiere' : '') }, enfants);
     }
     function rendreBlocs(conteneur, blocs, sanitaire) {
