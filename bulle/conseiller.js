@@ -389,7 +389,19 @@
       var relais = setTimeout(function () { var x = attente.querySelector('.etat'); if (x) x.textContent = 'Je compare quelques bouteilles pour vous…'; }, 4000);
       bouton.disabled = true;
       var session = etat.session;
-      return envoyerComplet(message, ficheEnvoyee).then(function (r) {
+      // P5 (1) : l'introduction (écrite par le code de la fonction, jamais par l'IA) s'affiche dès qu'elle arrive, l'animation
+      // d'attente dessous ; la réponse vérifiée la remplace ensuite (elle commence par la même introduction).
+      function surIntro(t) {
+        if (session !== etat.session || !attente.parentNode) return;
+        attente.className = 'reponse';
+        attente.textContent = '';
+        var m = el('div', { classe: 'msg texte' }); m.innerHTML = lier(insecable(t)); attente.appendChild(m);
+        var a = el('div', { classe: 'msg conseiller attente' });
+        a.innerHTML = '<span class="points" aria-hidden="true"><i></i><i></i><i></i></span><span class="etat">Je choisis les bouteilles…</span>';
+        attente.appendChild(a);
+        fil.scrollTop = fil.scrollHeight;
+      }
+      return envoyerComplet(message, ficheEnvoyee, surIntro).then(function (r) {
         if (session !== etat.session) { attente.remove(); return; } // nouvelle conversation entre-temps
         afficherReponse(attente, r);
         etat.fil.push(r.blocs ? { qui: 'conseiller', texte: r.texte, blocs: r.blocs, sanitaire: r.sanitaire } : { qui: 'conseiller', texte: r.texte });
@@ -413,13 +425,43 @@
 
   // Envoi : jamais de code d'accès, jamais d'erreur technique affichée (message poli à la place).
   // P3 : la réponse complète (texte de secours avec la mention sanitaire, blocs avec les cartes, mention sanitaire).
-  function envoyerComplet(message, fiche) {
-    var corps = { session: etat.session, message: message };
+  // P5 (1) : réponse en deux temps demandée (« flux ») : événements « intro » (texte du code) puis « fin » ({ statut, corps },
+  // la réponse habituelle). Une fonction qui ne connaît pas le flux répond en JSON comme avant : lu comme avant.
+  // Le flux est décodé par le décodeur UTF-8 du navigateur en mode « stream » (un caractère coupé entre deux morceaux est
+  // gardé jusqu'au morceau suivant) ; sans lecteur de flux, la réponse est lue d'un bloc (r.text()).
+  function lireFlux(r, surIntro) {
+    var fin = null, reste = '';
+    function bloc(b) {
+      var donnees = b.split('\n').filter(function (x) { return x.indexOf('data:') === 0; }).map(function (x) { return x.slice(5).trim(); }).join('');
+      if (!donnees) return;
+      var o; try { o = JSON.parse(donnees); } catch (e) { return; }
+      if (o && o.type === 'intro' && typeof o.texte === 'string') { if (surIntro) surIntro(o.texte); }
+      else if (o && o.type === 'fin') fin = { statut: Number(o.statut) || 500, corps: o.corps || {} };
+    }
+    function consommer(t) { reste += t; var i; while ((i = reste.indexOf('\n\n')) >= 0) { bloc(reste.slice(0, i)); reste = reste.slice(i + 2); } }
+    function resultat() { if (reste) { bloc(reste); reste = ''; } return fin || { statut: 500, corps: {} }; }
+    if (!(r.body && r.body.getReader && w.TextDecoder)) return r.text().then(function (t) { consommer(t); return resultat(); });
+    var lecteur = r.body.getReader(), decodeur = new w.TextDecoder('utf-8');
+    function suite() {
+      return lecteur.read().then(function (x) {
+        if (x.done) { consommer(decodeur.decode()); return resultat(); }
+        consommer(decodeur.decode(x.value, { stream: true }));
+        return suite();
+      });
+    }
+    return suite();
+  }
+  function envoyerComplet(message, fiche, surIntro) {
+    var corps = { session: etat.session, message: message, flux: true };
     if (fiche) corps.fiche = fiche;
     return w.fetch(ADRESSE, { method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'omit', body: JSON.stringify(corps) })
       .then(function (r) {
-        return r.json().catch(function () { return {}; }).then(function (s) {
-          if (!r.ok || !s.texte_affiche) return { texte: ERREUR_TECHNIQUE };
+        var type = (r.headers && r.headers.get && r.headers.get('content-type')) || '';
+        var lecture = /event-stream/.test(type) ? lireFlux(r, surIntro)
+          : r.json().catch(function () { return {}; }).then(function (s) { return { statut: r.ok ? 200 : (r.status || 500), corps: s }; });
+        return lecture.then(function (f) {
+          var s = f.corps || {};
+          if (f.statut >= 400 || !s.texte_affiche) return { texte: ERREUR_TECHNIQUE };
           var blocs = Array.isArray(s.blocs) && s.blocs.length ? s.blocs : null;
           return blocs ? { texte: s.texte_affiche, blocs: blocs, sanitaire: s.message_sanitaire || MENTION_SANITAIRE } : { texte: s.texte_affiche };
         });
