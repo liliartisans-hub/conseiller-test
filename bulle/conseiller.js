@@ -97,81 +97,117 @@
   var ICONE = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" ' +
     'd="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.5 4v-4A2.5 2.5 0 0 1 3 13.5"/><path fill="currentColor" d="M8 8.5h8v1.6H8zM8 11.5h5.5v1.6H8z"/></svg>';
 
+  // P4 (2) : palette et polices du site www.maisondesire.com (thème Horizon) — noir et blanc, filets gris fins, titres en
+  // serif (nom de la bulle, nom des bouteilles), texte en sans-serif, coins des boutons du site. Polices et coins lus sur la page
+  // (policesDuSite) et passés en variables --md-serif, --md-sans, --md-rayon ; repli propre sinon.
   var CSS = [
-    ':host{all:initial}',
-    '*{box-sizing:border-box;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}',
+    '*{box-sizing:border-box;font-family:var(--md-sans)}',
     '[hidden]{display:none!important}',
-    '.lanceur{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:10px;',
-    ' border:2px solid #f3e9dc;border-radius:999px;padding:12px 18px 12px 14px;background:#7b2d26;color:#fff;font-size:16px;font-weight:600;',
-    ' line-height:1.1;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.28);transition:transform .15s ease,box-shadow .15s ease}',
-    '.lanceur:hover,.lanceur:focus-visible{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.32)}',
-    '.lanceur:focus-visible{outline:3px solid #f3e9dc;outline-offset:2px}',
+    '.lanceur{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:10px;border:0;border-radius:var(--md-rayon);padding:12px 16px 12px 14px;background:#000;color:#fff;font-size:15px;font-weight:400;line-height:1.1;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:background .15s ease}',
+    '.lanceur:hover,.lanceur:focus-visible{background:#333}',
+    '.lanceur:focus-visible{outline:2px solid #000;outline-offset:3px}',
+    '.lanceur .long,.lanceur .court{font-family:var(--md-serif);font-size:16px;letter-spacing:.01em}',
     '.icone{display:inline-flex;flex:none}',
-    '.ia{flex:none;background:#f3e9dc;color:#7b2d26;font-size:12px;font-weight:800;letter-spacing:.04em;border-radius:6px;padding:3px 6px}',
+    '.ia{flex:none;background:#f2f2f2;color:#000;font-size:11px;font-weight:600;letter-spacing:.06em;border-radius:4px;padding:3px 6px;font-family:var(--md-sans)}',
     '.court{display:none}',
-    '@media (max-width:420px){.long{display:none}.court{display:inline}.lanceur{right:12px;padding:10px 14px 10px 12px;font-size:15px;gap:8px}}',
-    '.invitation{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;width:min(280px,calc(100vw - 32px));',
-    ' background:#fff;color:#2a2420;border:1px solid #e2dbd2;border-radius:14px;padding:12px 34px 12px 14px;font-size:15px;line-height:1.4;',
-    ' box-shadow:0 8px 24px rgba(0,0,0,.18)}',
+    '@media (max-width:420px){.long{display:none}.court{display:inline}.lanceur{right:12px;padding:10px 14px 10px 12px;gap:8px}}',
+    '.invitation{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;width:min(280px,calc(100vw - 32px));background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;padding:12px 34px 12px 14px;font-size:15px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.12)}',
     '.invitation p{margin:0;cursor:pointer}',
-    '.invitation:after{content:"";position:absolute;right:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid #e2dbd2;',
-    ' border-bottom:1px solid #e2dbd2;transform:rotate(45deg)}',
-    '.croix{position:absolute;top:4px;right:4px;border:0;background:none;font-size:20px;line-height:1;color:#6f645b;cursor:pointer;padding:4px 8px}',
+    '.invitation:after{content:"";position:absolute;right:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;transform:rotate(45deg)}',
+    '.croix{position:absolute;top:4px;right:4px;border:0;background:none;font-size:20px;line-height:1;color:#6b6b6b;cursor:pointer;padding:4px 8px}',
     '@media (prefers-reduced-motion:no-preference){.invitation{animation:apparaitre .3s ease-out}}',
     '@keyframes apparaitre{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}',
-    '.panneau{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;width:min(380px,calc(100vw - 16px));',
-    ' height:min(560px,calc(100dvh - 32px));display:flex;flex-direction:column;background:#f7f4ef;color:#2a2420;border:1px solid #e2dbd2;',
-    ' border-radius:14px;box-shadow:0 8px 28px rgba(0,0,0,.22);overflow:hidden;font-size:15px;line-height:1.45}',
+    '.panneau{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;width:min(390px,calc(100vw - 16px));height:min(580px,calc(100dvh - 32px));display:flex;flex-direction:column;background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:hidden;font-size:15px;line-height:1.5}',
     '@media (max-width:420px){.panneau{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));height:calc(100dvh - 16px)}}',
-    'header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border-bottom:1px solid #e2dbd2}',
-    'header .titre{font-size:15px;font-weight:700;color:#2a2420}',
+    'header{display:flex;align-items:center;gap:8px;padding:12px 12px 12px 16px;background:#fff;border-bottom:1px solid #e6e6e6}',
+    'header .titre{font-family:var(--md-serif);font-size:19px;font-weight:400;color:#000;letter-spacing:.005em}',
     'header .outils{margin-left:auto;display:flex;align-items:center;gap:2px}',
-    '.fermer,.agrandir,.nouvelle{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:#6f645b;padding:4px 8px;border-radius:6px}',
+    '.fermer,.agrandir,.nouvelle{border:0;background:none;font-size:20px;line-height:1;cursor:pointer;color:#6b6b6b;padding:4px 8px;border-radius:4px}',
     '.fermer{font-size:22px}',
-    '.fermer:hover,.agrandir:hover,.nouvelle:hover,.fermer:focus-visible,.agrandir:focus-visible,.nouvelle:focus-visible{background:#f3e9dc;color:#7b2d26}',
-    // P3 (5) : agrandi sur ordinateur, ≈ 720 px de large et 85 % de la hauteur, centré à droite ; téléphone : déjà plein écran.
+    '.fermer:hover,.agrandir:hover,.nouvelle:hover,.fermer:focus-visible,.agrandir:focus-visible,.nouvelle:focus-visible{background:#f2f2f2;color:#000}',
+    // P3 (5) : agrandi sur ordinateur, ≈ 720 px de large et 85 % de la hauteur ; téléphone : déjà plein écran.
     '.panneau.grand{width:min(720px,calc(100vw - 32px));height:85vh;bottom:7.5vh}',
     '@media (max-width:420px){.agrandir{display:none}}',
-    // P3 (2) : cartes bouteille (bordeaux #7b2d26, crème), lisibles à 375 px.
-    '.reponse{margin:8px 0;margin-right:6%}',
-    '.reponse .texte{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;padding:8px 12px;background:#fff;border:1px solid #e2dbd2;border-radius:12px}',
-    '.reponse .texte a{color:#7b2d26}',
-    '.carte{background:#fff;border:1px solid #e2dbd2;border-radius:12px;padding:10px 12px;margin:8px 0;box-shadow:0 1px 3px rgba(0,0,0,.05)}',
-    '.carte.premiere{border-color:#7b2d26;box-shadow:0 0 0 1px #7b2d26 inset}',
-    '.carte .suggestion{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#7b2d26;margin-bottom:4px}',
-    '.carte .ligne{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}',
-    '.carte .nom{font-weight:700;font-size:15px;line-height:1.3;overflow-wrap:anywhere}',
-    '.carte .prix{flex:none;text-align:right;font-weight:700;font-size:16px;color:#7b2d26;white-space:nowrap}',
-    '.carte .prix small{display:block;font-weight:400;font-size:11px;color:#6f645b}',
-    '.carte .faits{font-size:13px;color:#6f645b;margin-top:2px}',
-    '.carte .phrase{margin:6px 0 0;font-size:14px;line-height:1.45}',
-    '.carte .bas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:8px}',
-    '.carte .etiquette,.carte .rare{display:inline-block;font-size:12px;border-radius:999px;padding:3px 9px;background:#f3e9dc;color:#7b2d26;font-weight:600}',
-    '.carte .rare{background:#fff;border:1px solid #c9a227;color:#7a5d00}',
-    '.carte a.voir{display:inline-block;font-size:13px;font-weight:600;border-radius:999px;padding:5px 12px;background:#7b2d26;color:#fff;text-decoration:none}',
-    '.carte a.voir:hover,.carte a.voir:focus-visible{background:#5f211c}',
-    '.mention-boutique{font-size:12px;color:#6f645b;margin:4px 2px 8px}',
-    '.sanitaire{font-size:11px;color:#6f645b;margin:2px 2px 10px}',
-    '.fil{flex:1;overflow-y:auto;padding:10px 12px}',
-    '.msg{margin:8px 0;padding:8px 12px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}',
-    '.client{background:#7b2d26;color:#fff;margin-left:14%}',
-    '.conseiller{background:#fff;border:1px solid #e2dbd2;margin-right:6%}',
-    '.conseiller a{color:#7b2d26}',
+    // Cartes bouteille : blanches, filet gris fin ; la première (« Notre suggestion ») se distingue par un filet noir.
+    '.reponse{margin:10px 0;margin-right:4%}',
+    '.reponse .texte{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;padding:0 2px;background:none;border:0}',
+    '.reponse .texte a{color:#000}',
+    '.carte{background:#fff;border:1px solid #e6e6e6;border-radius:4px;padding:12px 14px;margin:10px 0}',
+    '.carte.premiere{border-color:#000;box-shadow:0 0 0 1px #000 inset}',
+    '.carte .suggestion{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#000;margin-bottom:4px}',
+    '.carte .ligne{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}',
+    '.carte .nom{font-family:var(--md-serif);font-weight:400;font-size:17px;line-height:1.3;color:#000;overflow-wrap:anywhere}',
+    '.carte .prix{flex:none;text-align:right;font-weight:500;font-size:16px;color:#000;white-space:nowrap}',
+    '.carte .prix small{display:block;font-weight:400;font-size:11px;color:#6b6b6b}',
+    '.carte .faits{font-size:13px;color:#6b6b6b;margin-top:3px}',
+    '.carte .phrase{margin:8px 0 0;font-size:14px;line-height:1.5;color:#181414}',
+    '.carte .bas{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}',
+    '.carte .etiquette,.carte .rare{display:inline-block;font-size:12px;border-radius:100px;padding:3px 10px;background:#f2f2f2;color:#000;font-weight:500}',
+    '.carte .rare{background:#fff;border:1px solid #000}',
+    '.carte a.voir{display:inline-block;font-size:13px;font-weight:400;border-radius:var(--md-rayon);padding:7px 14px;background:#000;color:#fff;text-decoration:none}',
+    '.carte a.voir:hover,.carte a.voir:focus-visible{background:#333}',
+    // P4 (3) : cartes « boutique » — appeler ou écrire à la boutique (boutons discrets).
+    '.carte .agir{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}',
+    '.carte .agir a{display:inline-block;font-size:13px;border-radius:var(--md-rayon);padding:6px 12px;background:#fff;color:#000;border:1px solid #e6e6e6;text-decoration:none}',
+    '.carte .agir a:hover,.carte .agir a:focus-visible{border-color:#000}',
+    '@media (max-width:420px){.numero{display:none}}',
+    '.mention-boutique{font-size:12px;line-height:1.5;color:#6b6b6b;margin:4px 2px 8px}',
+    '.sanitaire{font-size:11px;color:#6b6b6b;margin:2px 2px 10px}',
+    '.fil{flex:1;overflow-y:auto;padding:12px 14px;background:#fff}',
+    '.msg{margin:8px 0;padding:9px 13px;border-radius:4px;white-space:pre-wrap;overflow-wrap:anywhere}',
+    '.client{background:#000;color:#fff;margin-left:14%}',
+    '.conseiller{background:#fff;border:1px solid #e6e6e6;margin-right:4%}',
+    '.conseiller a{color:#000}',
     '.suggestions{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}',
-    '.suggestions button{border:1px solid #7b2d26;background:#fff;color:#7b2d26;border-radius:999px;padding:7px 12px;font-size:14px;line-height:1.2;cursor:pointer}',
-    '.suggestions button:hover,.suggestions button:focus-visible{background:#7b2d26;color:#fff}',
+    '.suggestions button{border:1px solid #e6e6e6;background:#fff;color:#000;border-radius:var(--md-rayon);padding:7px 12px;font-size:14px;line-height:1.2;cursor:pointer}',
+    '.suggestions button:hover,.suggestions button:focus-visible{border-color:#000}',
     '@media (max-width:420px){.suggestions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.suggestions button{padding:7px 6px;font-size:13px}}',
-    '.attente{color:#6f645b;font-style:italic;display:flex;align-items:center;gap:10px}',
+    '.attente{color:#6b6b6b;font-style:italic;display:flex;align-items:center;gap:10px}',
     '.points{display:inline-flex;gap:4px;flex:none}',
-    '.points i{width:7px;height:7px;border-radius:50%;background:#7b2d26;opacity:.25;animation:pulse 1.2s infinite ease-in-out}',
+    '.points i{width:6px;height:6px;border-radius:50%;background:#000;opacity:.25;animation:pulse 1.2s infinite ease-in-out}',
     '.points i:nth-child(2){animation-delay:.2s}.points i:nth-child(3){animation-delay:.4s}',
     '@keyframes pulse{0%,80%,100%{opacity:.25;transform:scale(.85)}40%{opacity:1;transform:scale(1)}}',
     '@media (prefers-reduced-motion:reduce){.points i{animation:none;opacity:.6}.lanceur{transition:none}}',
-    'form{display:flex;gap:8px;padding:8px 10px;border-top:1px solid #e2dbd2;background:#fff}',
-    'input{flex:1;min-width:0;padding:9px 10px;border:1px solid #e2dbd2;border-radius:8px;font-size:16px;color:#2a2420;background:#fff}',
-    'button.envoyer{border:0;border-radius:8px;padding:9px 14px;background:#7b2d26;color:#fff;font-size:15px;cursor:pointer}',
+    'form{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #e6e6e6;background:#fff}',
+    'input{flex:1;min-width:0;padding:10px 12px;border:1px solid #e6e6e6;border-radius:4px;font-size:16px;color:#181414;background:#fff}',
+    'input:focus{outline:none;border-color:#000}',
+    'button.envoyer{border:0;border-radius:var(--md-rayon);padding:10px 16px;background:#000;color:#fff;font-size:15px;cursor:pointer}',
+    'button.envoyer:hover{background:#333}',
     'button.envoyer:disabled{opacity:.5}',
   ].join('\n');
+
+  // P4 (2a) : polices et coins réellement utilisés par la page (variables CSS du thème Horizon, sinon style calculé du texte,
+  // du menu ou d'un titre, et du bouton « Ajouter au panier ») ; valeur absente ou douteuse → repli.
+  var POLICE_SURE = /^[\w\s"',.\-]{1,200}$/;
+  var RAYON_SUR = /^\d{1,2}(?:\.\d+)?px$/;
+  var REPLI = { serif: 'Georgia, "Times New Roman", serif', sans: 'system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif', rayon: '14px' };
+  function styleCalcule(e) { try { return e && w.getComputedStyle ? w.getComputedStyle(e) : null; } catch (x) { return null; } }
+  function sure(v, rx) { v = String(v || '').trim(); return rx.test(v) ? v : ''; }
+  function policesDuSite() {
+    var racine = styleCalcule(d.documentElement);
+    var variable = function (k) { return racine && racine.getPropertyValue ? racine.getPropertyValue(k) : ''; };
+    var police = function (sel) { var e = chercher(sel)[0]; var s = styleCalcule(e); return s ? s.fontFamily : ''; };
+    var corps = styleCalcule(d.body);
+    var sans = sure(variable('--font-body--family'), POLICE_SURE) || sure(corps && corps.fontFamily, POLICE_SURE);
+    var serif = sure(variable('--font-heading--family'), POLICE_SURE) || sure(police('header nav a, nav a, .header__menu-item, h1, h2'), POLICE_SURE);
+    if (serif && serif === sans) serif = '';
+    var bouton = styleCalcule(chercher(BOUTON_PANIER)[0]);
+    var rayon = sure(variable('--style-border-radius-buttons-primary'), RAYON_SUR) || sure(bouton && bouton.borderRadius, RAYON_SUR);
+    if (rayon && parseFloat(rayon) > 40) rayon = '';
+    return { serif: serif || REPLI.serif, sans: sans || REPLI.sans, rayon: rayon || REPLI.rayon };
+  }
+  function cssAvecPolices() {
+    var p = policesDuSite();
+    return ':host{all:initial;--md-serif:' + p.serif + ';--md-sans:' + p.sans + ';--md-rayon:' + p.rayon + '}\n' + CSS;
+  }
+
+  // P4 (3) : coordonnées de la boutique pour les cartes « En boutique uniquement » (informations publiques de la boutique).
+  var TEL = '+33556930604', TEL_AFFICHE = '05 56 93 06 04', COURRIEL = 'contact@maisondesire.com';
+  function lienCourriel(c) {
+    var nom = String(c.nom || '');
+    var corps = 'Bonjour, la bouteille ' + nom + ' (' + String(c.prix || '') + ', prix indicatif) est-elle disponible en boutique ? Je souhaiterais la faire mettre de côté. Merci.';
+    return 'mailto:' + COURRIEL + '?subject=' + encodeURIComponent('Demande : ' + nom) + '&body=' + encodeURIComponent(corps);
+  }
 
   // Construction par éléments (aucun HTML venu de l'extérieur, sauf les réponses passées par lier()).
   function el(tag, attributs, enfants) {
@@ -210,7 +246,7 @@
       el('header', {}, [el('strong', { classe: 'titre', texte: NOM }), el('span', { classe: 'ia', texte: 'IA' }),
         el('span', { classe: 'outils' }, [nouvelle, agrandir, fermer])]), fil, form]);
     panneau.hidden = true;
-    [el('style', { texte: CSS }), lanceur, invitation, panneau].forEach(function (e) { racine.appendChild(e); });
+    [el('style', { texte: cssAvecPolices() }), lanceur, invitation, panneau].forEach(function (e) { racine.appendChild(e); });
 
     var fiche = adresseFiche(chemin());
     var lienFiche = null;
@@ -234,6 +270,11 @@
       if (c.faits) enfants.push(el('div', { classe: 'faits', texte: String(c.faits) }));
       if (c.phrase) enfants.push(el('p', { classe: 'phrase', texte: insecable(c.phrase) }));
       if (bas.length) enfants.push(el('div', { classe: 'bas' }, bas));
+      // P4 (3) : appeler ou écrire à la boutique, sur les cartes « boutique » seulement (numéro en clair sur ordinateur).
+      if (c.boutique) {
+        var appeler = el('a', { classe: 'appeler', href: 'tel:' + TEL }, [el('span', { texte: 'Appeler la boutique' }), el('span', { classe: 'numero', texte: insecable(' · ' + TEL_AFFICHE) })]);
+        enfants.push(el('div', { classe: 'agir' }, [appeler, el('a', { classe: 'courriel', href: lienCourriel(c), texte: 'Demander par e-mail' })]));
+      }
       return el('div', { classe: 'carte' + (c.suggestion ? ' premiere' : '') }, enfants);
     }
     function rendreBlocs(conteneur, blocs, sanitaire) {
@@ -289,7 +330,7 @@
       var point = (cible.closest && cible.closest('form')) || cible;
       lienFiche = el('a', { href: '#conseiller', classe: 'conseiller-lien-fiche', texte: LIEN_FICHE });
       lienFiche.style.display = 'block'; lienFiche.style.marginTop = '10px'; lienFiche.style.fontSize = '0.92em'; lienFiche.style.lineHeight = '1.45';
-      lienFiche.style.color = '#7b2d26'; lienFiche.style.textDecoration = 'underline'; lienFiche.style.cursor = 'pointer';
+      lienFiche.style.color = 'inherit'; lienFiche.style.textDecoration = 'underline'; lienFiche.style.cursor = 'pointer';
       lienFiche.addEventListener('click', function (e) {
         e.preventDefault();
         ouvrir(true); proposer(SUGGESTIONS_FICHE, true);
