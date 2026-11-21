@@ -41,7 +41,9 @@
   var BOUTON_PANIER = 'form[action*="/cart/add"] button[name="add"], form[action*="/cart/add"] [type="submit"], button.product-form__submit, [data-add-to-cart], #AddToCart';
   // Fenêtres de vérification de l'âge : identifiants usuels des applications, ou dialogue qui parle de l'âge.
   var FENETRE_AGE = '[id*="age-verif" i], [class*="age-verif" i], [id*="ageverif" i], [class*="ageverif" i], [id*="age_verif" i], [class*="age_verif" i],' +
-    ' [id*="age-gate" i], [class*="age-gate" i], [id*="agegate" i], [class*="agegate" i], [id*="age-check" i], [class*="age-check" i]';
+    ' [id*="age-gate" i], [class*="age-gate" i], [id*="agegate" i], [class*="agegate" i], [id*="age-check" i], [class*="age-check" i],' +
+    // P8 : application de vérification de l'âge du site www.maisondesire.com (fenêtre « Veuillez confirmer… », classes agp__…).
+    ' [class*="agp__wrapper" i]';
   var DIALOGUES = '[role="dialog"], [aria-modal="true"], dialog[open]';
   var TEXTE_AGE = /18 ans|18\+|majeur|majorité|âge légal|votre âge|l['’]âge requis|date de naissance/i;
   // Barre « Ajouter au panier » collée en bas de l'écran (téléphone) : la bulle se place au-dessus.
@@ -103,7 +105,7 @@
   var CSS = [
     '*{box-sizing:border-box;font-family:var(--md-sans)}',
     '[hidden]{display:none!important}',
-    '.lanceur{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:10px;border:0;border-radius:var(--md-rayon);padding:12px 16px 12px 14px;background:#000;color:#fff;font-size:15px;font-weight:400;line-height:1.1;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:background .15s ease}',
+    '.lanceur{position:fixed;right:calc(16px + var(--md-dx,0px));bottom:calc(16px + var(--md-barre,0px) + var(--md-dy,0px) + env(safe-area-inset-bottom));z-index:900;display:flex;align-items:center;gap:10px;border:0;border-radius:var(--md-rayon);padding:12px 16px 12px 14px;background:#000;color:#fff;font-size:15px;font-weight:400;line-height:1.1;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:background .15s ease}',
     '.lanceur:hover,.lanceur:focus-visible{background:#333}',
     '.lanceur:focus-visible{outline:2px solid #000;outline-offset:3px}',
     '.lanceur .long,.lanceur .court{font-family:var(--md-serif);font-size:16px;letter-spacing:.01em}',
@@ -113,15 +115,20 @@
     // P7 : « Reprendre la conversation » (après « Voir la bouteille ») avec une petite pastille, sur téléphone comme sur ordinateur.
     '.lanceur .reprendre{font-family:var(--md-serif);font-size:16px;letter-spacing:.01em;white-space:nowrap}',
     '.lanceur .pastille{flex:none;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #000}',
-    '@media (max-width:420px){.long{display:none}.court{display:inline}.lanceur{right:12px;padding:10px 14px 10px 12px;gap:8px}}',
-    '.invitation{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;width:min(280px,calc(100vw - 32px));background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;padding:12px 34px 12px 14px;font-size:15px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.12)}',
+    '@media (max-width:420px){.long{display:none}.court{display:inline}.lanceur{right:calc(12px + var(--md-dx,0px));padding:10px 14px 10px 12px;gap:8px}}',
+    // P8 : téléphone reconnu d'après l'écran visible (Chrome Android élargit la page quand le site déborde : la règle de largeur
+    // ci-dessus ne s'applique alors plus) ; mêmes réglages sous :host(.tel).
+    ':host(.tel) .long{display:none}', ':host(.tel) .court{display:inline}',
+    ':host(.tel) .lanceur{right:calc(12px + var(--md-dx,0px));padding:10px 14px 10px 12px;gap:8px}',
+    '.invitation{position:fixed;right:calc(16px + var(--md-dx,0px));bottom:calc(84px + var(--md-barre,0px) + var(--md-dy,0px) + env(safe-area-inset-bottom));z-index:900;width:min(280px,calc(var(--md-vw,100vw) - 32px));background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;padding:12px 34px 12px 14px;font-size:15px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.12)}',
     '.invitation p{margin:0;cursor:pointer}',
     '.invitation:after{content:"";position:absolute;right:28px;bottom:-7px;width:12px;height:12px;background:#fff;border-right:1px solid #e6e6e6;border-bottom:1px solid #e6e6e6;transform:rotate(45deg)}',
     '.croix{position:absolute;top:4px;right:4px;border:0;background:none;font-size:20px;line-height:1;color:#6b6b6b;cursor:pointer;padding:4px 8px}',
     '@media (prefers-reduced-motion:no-preference){.invitation{animation:apparaitre .3s ease-out}}',
     '@keyframes apparaitre{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}',
-    '.panneau{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:900;width:min(390px,calc(100vw - 16px));height:min(580px,calc(100dvh - 32px));display:flex;flex-direction:column;background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:hidden;font-size:15px;line-height:1.5}',
-    '@media (max-width:420px){.panneau{right:8px;bottom:calc(8px + env(safe-area-inset-bottom));height:calc(100dvh - 16px)}}',
+    '.panneau{position:fixed;right:calc(16px + var(--md-dx,0px));bottom:calc(16px + var(--md-dy,0px) + env(safe-area-inset-bottom));z-index:900;width:min(390px,calc(var(--md-vw,100vw) - 16px));height:min(580px,calc(var(--md-vh,100dvh) - 32px));display:flex;flex-direction:column;background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;box-shadow:0 8px 28px rgba(0,0,0,.16);overflow:hidden;font-size:15px;line-height:1.5}',
+    '@media (max-width:420px){.panneau{right:calc(8px + var(--md-dx,0px));bottom:calc(8px + var(--md-dy,0px) + env(safe-area-inset-bottom));height:calc(var(--md-vh,100dvh) - 16px)}}',
+    ':host(.tel) .panneau{right:calc(8px + var(--md-dx,0px));bottom:calc(8px + var(--md-dy,0px) + env(safe-area-inset-bottom));width:calc(var(--md-vw,100vw) - 16px);height:calc(var(--md-vh,100dvh) - 16px)}',
     'header{display:flex;align-items:center;gap:8px;padding:12px 12px 12px 16px;background:#fff;border-bottom:1px solid #e6e6e6}',
     'header .titre{font-family:var(--md-serif);font-size:19px;font-weight:400;color:#000;letter-spacing:.005em}',
     'header .outils{margin-left:auto;display:flex;align-items:center;gap:2px}',
@@ -129,8 +136,8 @@
     '.fermer{font-size:22px}',
     '.fermer:hover,.agrandir:hover,.nouvelle:hover,.fermer:focus-visible,.agrandir:focus-visible,.nouvelle:focus-visible{background:#f2f2f2;color:#000}',
     // P3 (5) : agrandi sur ordinateur, ≈ 720 px de large et 85 % de la hauteur ; téléphone : déjà plein écran.
-    '.panneau.grand{width:min(720px,calc(100vw - 32px));height:85vh;bottom:7.5vh}',
-    '@media (max-width:420px){.agrandir{display:none}}',
+    '.panneau.grand{width:min(720px,calc(var(--md-vw,100vw) - 32px));height:calc(var(--md-vh,100vh) * .85);bottom:calc(var(--md-vh,100vh) * .075 + var(--md-dy,0px))}',
+    '@media (max-width:420px){.agrandir{display:none}}', ':host(.tel) .agrandir{display:none}',
     // Cartes bouteille : blanches, filet gris fin ; la première (« Notre suggestion ») se distingue par un filet noir.
     '.reponse{margin:10px 0;margin-right:4%}',
     '.reponse .texte{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0;padding:0 2px;background:none;border:0}',
@@ -163,6 +170,7 @@
     '.suggestions button{border:1px solid #e6e6e6;background:#fff;color:#000;border-radius:var(--md-rayon);padding:7px 12px;font-size:14px;line-height:1.2;cursor:pointer}',
     '.suggestions button:hover,.suggestions button:focus-visible{border-color:#000}',
     '@media (max-width:420px){.suggestions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.suggestions button{padding:7px 6px;font-size:13px}}',
+    ':host(.tel) .suggestions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}', ':host(.tel) .suggestions button{padding:7px 6px;font-size:13px}',
     '.attente{color:#6b6b6b;font-style:italic;display:flex;align-items:center;gap:10px}',
     '.points{display:inline-flex;gap:4px;flex:none}',
     '.points i{width:6px;height:6px;border-radius:50%;background:#000;opacity:.25;animation:pulse 1.2s infinite ease-in-out}',
@@ -224,6 +232,9 @@
 
   function monter() {
     var hote = el('div', { id: 'conseiller-maison-desire' });
+    // P8 : l'hôte ne prend aucune place dans la page du site, quels que soient les styles du thème (tout est fixé dedans).
+    ['width', 'height', 'margin', 'padding', 'border'].forEach(function (k) { hote.style[k] = '0'; });
+    hote.style.overflow = 'visible';
     var racine = hote.attachShadow ? hote.attachShadow({ mode: 'closed' }) : hote;
     var icone = el('span', { classe: 'icone' }); icone.innerHTML = ICONE;
     // P3 (1) : « La cave à conseils » + « IA » (toujours visible, obligation d'information) ; « Conseils » sur téléphone.
@@ -347,10 +358,27 @@
       if (a && lienDuSite(a)) replier();
     });
     function cacherInvitation() { invitation.hidden = true; }
+    // P8 : la bulle se cale sur l'écran VISIBLE. Sur Chrome Android, une page du site plus large que l'écran élargit la zone de
+    // référence des éléments fixés : sans ce calage, le bouton partait hors de l'écran (visible seulement en dézoomant).
+    // --md-dx / --md-dy : écart entre le bord droit / bas de cette zone et celui de l'écran visible ; --md-vw / --md-vh : taille
+    // de l'écran visible ; --md-barre : barre « Ajouter au panier » collée en bas. Classe « tel » : écran de téléphone.
+    var variables = {};
+    function poser(nom, valeur) {
+      if (variables[nom] === valeur) return;
+      variables[nom] = valeur;
+      if (hote.style.setProperty) { if (valeur == null) hote.style.removeProperty(nom); else hote.style.setProperty(nom, valeur); } else hote.style[nom] = valeur;
+    }
     function placer() {
       var h = hauteurBarreCollante();
-      lanceur.style.bottom = h ? 'calc(' + (16 + h) + 'px + env(safe-area-inset-bottom))' : '';
-      invitation.style.bottom = h ? 'calc(' + (84 + h) + 'px + env(safe-area-inset-bottom))' : '';
+      poser('--md-barre', h ? h + 'px' : null);
+      var vv = w.visualViewport;
+      if (!vv || !vv.width) return;
+      poser('--md-dx', Math.max(0, Math.round((w.innerWidth || 0) - (vv.offsetLeft + vv.width))) + 'px');
+      poser('--md-dy', Math.max(0, Math.round((w.innerHeight || 0) - (vv.offsetTop + vv.height))) + 'px');
+      poser('--md-vw', Math.round(vv.width) + 'px');
+      poser('--md-vh', Math.round(vv.height) + 'px');
+      var tel = vv.width * (vv.scale || 1) <= 420;
+      hote.className = tel ? 'tel' : '';
     }
     // Invitation : une fois par visite, après 10 s ET une interaction, jamais sur le panier ou le paiement, jamais si la
     // conversation est commencée ou le panneau ouvert, jamais devant la vérification de l'âge. N'ouvre jamais le panneau.
@@ -454,6 +482,9 @@
     });
 
     surInvitation = verifierInvitation;
+    // P8 : recalage dès que l'écran visible bouge (zoom, défilement, clavier, rotation).
+    if (w.visualViewport && w.visualViewport.addEventListener) { w.visualViewport.addEventListener('resize', placer); w.visualViewport.addEventListener('scroll', placer); }
+    w.addEventListener('resize', placer);
     d.body.appendChild(hote);
     surveiller();
     setInterval(surveiller, 1000);
