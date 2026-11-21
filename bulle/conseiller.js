@@ -161,7 +161,10 @@
     '.carte .bas a.appeler:hover,.carte .bas a.courriel:hover,.carte .bas a.appeler:focus-visible,.carte .bas a.courriel:focus-visible{color:#000}',
     '.mention-boutique{font-size:12px;line-height:1.5;color:#6b6b6b;margin:4px 2px 8px}',
     '.sanitaire{font-size:11px;color:#6b6b6b;margin:2px 2px 10px}',
-    '.fil{flex:1;overflow-y:auto;padding:12px 14px;background:#fff}',
+    '.fil{flex:1;overflow-y:auto;padding:12px 14px;background:#fff;position:relative}',
+    // P9 : flèche « ↓ » discrète quand il reste du contenu en dessous (au-dessus de la zone de saisie).
+    '.descendre{position:absolute;right:16px;bottom:72px;width:32px;height:32px;border-radius:50%;border:1px solid #e6e6e6;background:#fff;color:#000;font-size:16px;line-height:1;padding:0;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:1;opacity:.9}',
+    '.descendre:hover,.descendre:focus-visible{border-color:#000;opacity:1}',
     '.msg{margin:8px 0;padding:9px 13px;border-radius:4px;white-space:pre-wrap;overflow-wrap:anywhere}',
     '.client{background:#000;color:#fff;margin-left:14%}',
     '.conseiller{background:#fff;border:1px solid #e6e6e6;margin-right:4%}',
@@ -258,14 +261,31 @@
       el('header', {}, [el('strong', { classe: 'titre', texte: NOM }), el('span', { classe: 'ia', texte: 'IA' }),
         el('span', { classe: 'outils' }, [nouvelle, agrandir, fermer])]), fil, form]);
     panneau.hidden = true;
+    // P9 : flèche « ↓ » (fin de l'échange).
+    var descendre = el('button', { classe: 'descendre', type: 'button', 'aria-label': 'Aller à la fin de la réponse', title: 'Aller en bas', texte: '↓' });
+    descendre.hidden = true;
+    panneau.appendChild(descendre);
     [el('style', { texte: cssAvecPolices() }), lanceur, invitation, panneau].forEach(function (e) { racine.appendChild(e); });
 
     var fiche = adresseFiche(chemin());
     var lienFiche = null;
 
+    // P9 — Défilement. enBas() : la fin de l'échange ; placerReponse() : le message du client en haut du panneau et le début de
+    // la réponse juste en dessous (le début de la réponse en haut si le message est long) ; flèche « ↓ » tenue à jour.
+    function maxDefilement() { return Math.max(0, fil.scrollHeight - fil.clientHeight); }
+    function majFleche() { descendre.hidden = !(maxDefilement() - fil.scrollTop > 24); }
+    function defiler(v) { fil.scrollTop = Math.max(0, Math.min(v, maxDefilement())); majFleche(); return fil.scrollTop; }
+    function enBas() { return defiler(maxDefilement()); }
+    function placerReponse(reponseEl, clientEl) {
+      var cible = reponseEl.offsetTop - 8;
+      if (clientEl && cible - (clientEl.offsetTop - 8) <= fil.clientHeight * 0.45) cible = clientEl.offsetTop - 8;
+      return defiler(cible);
+    }
+    fil.addEventListener('scroll', majFleche);
+    descendre.addEventListener('click', function () { enBas(); });
     function bulle(classe, html) {
       var m = el('div', { classe: 'msg ' + classe }); m.innerHTML = html; fil.appendChild(m);
-      fil.scrollTop = fil.scrollHeight; return m;
+      enBas(); return m;
     }
     // P3 (2) : réponse en blocs — texte, cartes bouteille (construites élément par élément, jamais de HTML venu de la
     // fonction), mention de la boutique, puis la mention sanitaire.
@@ -315,7 +335,7 @@
         suggestions.appendChild(b);
       });
       fil.appendChild(suggestions); suggestions.hidden = false;
-      fil.scrollTop = fil.scrollHeight;
+      enBas();
     }
     // P7 : lanceur « Reprendre la conversation » + pastille tant que le panneau a été replié par un lien vers une page du site.
     var reprendre = null, pastille = null;
@@ -337,7 +357,7 @@
       panneau.hidden = !oui; lanceur.hidden = oui;
       majLanceur();
       // P7 : rouvert après un repli → même position de défilement ; sinon, en bas de l'échange.
-      if (oui) { cacherInvitation(); fil.scrollTop = revenir != null ? revenir : fil.scrollHeight; champ.focus(); }
+      if (oui) { cacherInvitation(); if (revenir != null) defiler(revenir); else enBas(); champ.focus(); }
     }
     // P7 : un lien vers une page du site (« Voir la bouteille », lien d'une réponse) replie le panneau AVANT que la page s'ouvre :
     // la page de la bouteille s'affiche normalement, la conversation reste dans l'onglet (même session) et le panneau ne se
@@ -424,7 +444,7 @@
       agrandir.setAttribute('aria-pressed', grand ? 'true' : 'false');
       agrandir.setAttribute('aria-label', grand ? 'Réduire' : 'Agrandir');
       agrandir.setAttribute('title', grand ? 'Réduire' : 'Agrandir');
-      fil.scrollTop = fil.scrollHeight;
+      enBas();
     }
     taille(!!etat.grand);
     agrandir.addEventListener('click', function () {
@@ -447,13 +467,17 @@
     function envoyerMessage(message, ficheEnvoyee) {
       if (!message || bouton.disabled) return;
       suggestions.hidden = true;
-      bulle('client', echapper(message));
+      var messageClient = bulle('client', echapper(message));
       etat.fil.push({ qui: 'client', texte: message }); ecrire(etat);
       // E14 : bulle d'attente écrite par la page, remplacée par la réponse vérifiée.
       var attente = bulle('conseiller attente', '<span class="points" aria-hidden="true"><i></i><i></i><i></i></span><span class="etat">Je regarde dans le catalogue…</span>');
       var relais = setTimeout(function () { var x = attente.querySelector('.etat'); if (x) x.textContent = 'Je compare quelques bouteilles pour vous…'; }, 4000);
       bouton.disabled = true;
       var session = etat.session;
+      // P9 : position après l'envoi ; si le client fait défiler pendant l'attente, on ne déplace plus rien.
+      var positionAuto = fil.scrollTop;
+      function laisse() { return Math.abs(fil.scrollTop - positionAuto) <= 2; }
+      function placer9() { if (laisse()) positionAuto = placerReponse(attente, messageClient); else majFleche(); }
       // P5 (1) : l'introduction (écrite par le code de la fonction, jamais par l'IA) s'affiche dès qu'elle arrive, l'animation
       // d'attente dessous ; la réponse vérifiée la remplace ensuite (elle commence par la même introduction).
       function surIntro(t) {
@@ -464,14 +488,16 @@
         var a = el('div', { classe: 'msg conseiller attente' });
         a.innerHTML = '<span class="points" aria-hidden="true"><i></i><i></i><i></i></span><span class="etat">Je choisis les bouteilles…</span>';
         attente.appendChild(a);
-        fil.scrollTop = fil.scrollHeight;
+        placer9();
       }
       return envoyerComplet(message, ficheEnvoyee, surIntro).then(function (r) {
         if (session !== etat.session) { attente.remove(); return; } // nouvelle conversation entre-temps
         afficherReponse(attente, r);
+        // P9 : début de la réponse en haut (déjà fait à l'introduction : même position, rien ne bouge ; sinon fait maintenant).
+        placer9();
         etat.fil.push(r.blocs ? { qui: 'conseiller', texte: r.texte, blocs: r.blocs, sanitaire: r.sanitaire } : { qui: 'conseiller', texte: r.texte });
         etat.fil = etat.fil.slice(-40); ecrire(etat);
-      }).then(function () { clearTimeout(relais); bouton.disabled = false; fil.scrollTop = fil.scrollHeight; });
+      }).then(function () { clearTimeout(relais); bouton.disabled = false; majFleche(); });
     }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
