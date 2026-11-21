@@ -110,6 +110,9 @@
     '.icone{display:inline-flex;flex:none}',
     '.ia{flex:none;background:#f2f2f2;color:#000;font-size:11px;font-weight:600;letter-spacing:.06em;border-radius:4px;padding:3px 6px;font-family:var(--md-sans)}',
     '.court{display:none}',
+    // P7 : « Reprendre la conversation » (après « Voir la bouteille ») avec une petite pastille, sur téléphone comme sur ordinateur.
+    '.lanceur .reprendre{font-family:var(--md-serif);font-size:16px;letter-spacing:.01em;white-space:nowrap}',
+    '.lanceur .pastille{flex:none;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px #000}',
     '@media (max-width:420px){.long{display:none}.court{display:inline}.lanceur{right:12px;padding:10px 14px 10px 12px;gap:8px}}',
     '.invitation{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:900;width:min(280px,calc(100vw - 32px));background:#fff;color:#181414;border:1px solid #e6e6e6;border-radius:4px;padding:12px 34px 12px 14px;font-size:15px;line-height:1.45;box-shadow:0 6px 20px rgba(0,0,0,.12)}',
     '.invitation p{margin:0;cursor:pointer}',
@@ -303,11 +306,46 @@
       fil.appendChild(suggestions); suggestions.hidden = false;
       fil.scrollTop = fil.scrollHeight;
     }
+    // P7 : lanceur « Reprendre la conversation » + pastille tant que le panneau a été replié par un lien vers une page du site.
+    var reprendre = null, pastille = null;
+    function majLanceur() {
+      var oui = !!etat.reprendre && etat.fil.length > 0;
+      if (oui && !reprendre) {
+        reprendre = el('span', { classe: 'reprendre', texte: 'Reprendre la conversation' });
+        pastille = el('span', { classe: 'pastille', 'aria-hidden': 'true' });
+        lanceur.insertBefore(reprendre, lanceur.children[1]);
+        lanceur.appendChild(pastille);
+      } else if (!oui && reprendre) { reprendre.remove(); pastille.remove(); reprendre = pastille = null; }
+      Array.prototype.forEach.call(lanceur.children, function (c) { if (/\b(long|court)\b/.test(c.className)) c.hidden = oui; });
+      lanceur.setAttribute('aria-label', oui ? 'Reprendre la conversation, ' + NOM + ' (IA)' : NOM + ', conseiller virtuel (IA)');
+    }
     function ouvrir(oui) {
+      var revenir = oui && etat.reprendre && typeof etat.defilement === 'number' ? etat.defilement : null;
+      if (oui) { etat.reprendre = false; delete etat.defilement; }
       etat.ouvert = oui; ecrire(etat);
       panneau.hidden = !oui; lanceur.hidden = oui;
-      if (oui) { cacherInvitation(); fil.scrollTop = fil.scrollHeight; champ.focus(); }
+      majLanceur();
+      // P7 : rouvert après un repli → même position de défilement ; sinon, en bas de l'échange.
+      if (oui) { cacherInvitation(); fil.scrollTop = revenir != null ? revenir : fil.scrollHeight; champ.focus(); }
     }
+    // P7 : un lien vers une page du site (« Voir la bouteille », lien d'une réponse) replie le panneau AVANT que la page s'ouvre :
+    // la page de la bouteille s'affiche normalement, la conversation reste dans l'onglet (même session) et le panneau ne se
+    // rouvre jamais tout seul. Jamais pour « Appeler », « E-mail », un lien ouvert ailleurs ou un clic avec Ctrl / Maj.
+    function lienDuSite(a) {
+      var h = String(a.getAttribute('href') || '');
+      var cible = a.getAttribute('target');
+      if (cible && cible !== '_self') return false;
+      return /^https:\/\/(?:www\.)?maisondesire\.com\//i.test(h) || /^\/(?!\/)/.test(h);
+    }
+    function replier() {
+      etat.defilement = fil.scrollTop; etat.reprendre = true;
+      ouvrir(false);
+    }
+    panneau.addEventListener('click', function (e) {
+      if (!e || e.defaultPrevented || (e.button && e.button !== 0) || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+      var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      if (a && lienDuSite(a)) replier();
+    });
     function cacherInvitation() { invitation.hidden = true; }
     function placer() {
       var h = hauteurBarreCollante();
@@ -351,7 +389,7 @@
     }
     accueillir();
     lanceur.addEventListener('click', function () { ouvrir(true); });
-    fermer.addEventListener('click', function () { ouvrir(false); });
+    fermer.addEventListener('click', function () { etat.reprendre = false; delete etat.defilement; ouvrir(false); });
     // Taille gardée pendant la visite (onglet), comme le fil.
     function taille(grand) {
       panneau.className = grand ? 'panneau grand' : 'panneau';
@@ -419,6 +457,20 @@
     d.body.appendChild(hote);
     surveiller();
     setInterval(surveiller, 1000);
+    // P7 : retour arrière du navigateur (page restaurée telle quelle, ou rechargée) : l'échange de l'onglet est relu, le panneau
+    // reste replié avec « Reprendre la conversation » ; jamais rouvert tout seul.
+    function auRetour() {
+      var s = lire();
+      if (s && typeof s.session === 'string' && Array.isArray(s.fil)) etat = s;
+      etat.ouvert = false;
+      if (etat.fil.length) etat.reprendre = true;
+      ecrire(etat);
+      fil.textContent = '';
+      accueillir();
+      ouvrir(false);
+    }
+    w.addEventListener('pageshow', function (e) { if (e && e.persisted) auRetour(); });
+    if (retourArriere()) { etat.ouvert = false; if (etat.fil.length) etat.reprendre = true; }
     ouvrir(!!etat.ouvert);
   }
 
@@ -466,6 +518,10 @@
         });
       })
       .catch(function () { return { texte: ERREUR_TECHNIQUE }; });
+  }
+  // P7 : page ouverte par le bouton « retour » du navigateur.
+  function retourArriere() {
+    try { var n = w.performance && w.performance.getEntriesByType && w.performance.getEntriesByType('navigation')[0]; return !!n && n.type === 'back_forward'; } catch (e) { return false; }
   }
   function envoyer(message, fiche) { return envoyerComplet(message, fiche).then(function (r) { return r.texte; }); }
 
