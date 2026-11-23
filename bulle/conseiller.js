@@ -76,7 +76,7 @@
   // P10 · Mesure, sans donnée personnelle ni texte de conversation, et seulement sur la boutique (jamais sur la page de test) :
   // (1) attribut de panier Shopify « conseiller : oui » (visible sur la commande) après un clic vers une fiche bouteille ;
   //     renvoyé une fois à la page suivante si la réponse n'est pas arrivée (la page a changé avant), puis plus jamais ;
-  // (2) clic compté par la fonction : le handle de la bouteille, rien d'autre (ni session, ni texte). Envois « keepalive » :
+  // (2) clic compté par la fonction : le handle de la bouteille (P13 : + session et numéro de la réponse ; jamais de texte). Envois « keepalive » :
   //     ils partent même si la page de la fiche s'ouvre aussitôt ; texte brut, sans cookie : aucune requête préalable.
   var FICHE_SITE = /^https:\/\/(?:www\.)?maisondesire\.com\/products\/([a-z0-9][a-z0-9-]*)\/?$/i;
   function surLaBoutique() {
@@ -91,10 +91,14 @@
         .then(function (r) { if (r && r.ok && etat.panier === 'a_marquer') { etat.panier = 'marque'; ecrire(etat); } }, function () {});
     } catch (e) { /* panier indisponible : rien ne change pour le client */ }
   }
-  function compterClic(handle) {
+  // P13 : le clic porte aussi la session (identifiant aléatoire de l'onglet) et le numéro de la réponse : identifiants techniques,
+  // aucune donnée personnelle, aucun texte. Réponse ancienne sans numéro → clic sans numéro (jamais inventé).
+  function compterClic(handle, tour) {
     if (!surLaBoutique()) return;
+    var corps = { clic: handle, session: etat.session };
+    if (tour != null) corps.tour = tour;
     try {
-      w.fetch(ADRESSE, { method: 'POST', keepalive: true, credentials: 'omit', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ clic: handle }) })
+      w.fetch(ADRESSE, { method: 'POST', keepalive: true, credentials: 'omit', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(corps) })
         .then(null, function () {});
     } catch (e) { /* comptage seulement */ }
   }
@@ -352,6 +356,7 @@
     function afficherReponse(conteneur, r) {
       if (r.blocs && r.blocs.length) rendreBlocs(conteneur, r.blocs, r.sanitaire);
       else { conteneur.className = 'msg conseiller'; conteneur.innerHTML = lier(r.texte); }
+      if (Number.isInteger(r.tour)) conteneur.setAttribute('data-tour', String(r.tour)); // P13
     }
     // Suggestions : sous l'accueil tant qu'aucun message n'est envoyé ; celles de la fiche quand on vient du lien de la fiche.
     function proposer(liste, avecFiche) {
@@ -410,7 +415,9 @@
       var a = e && e.target && e.target.closest ? e.target.closest('a[href]') : null;
       var m = a ? FICHE_SITE.exec(String(a.getAttribute('href') || '')) : null;
       if (!m) return;
-      compterClic(m[1].toLowerCase());
+      var bloc = a.closest('[data-tour]');
+      var tour = bloc ? Number(bloc.getAttribute('data-tour')) : null;
+      compterClic(m[1].toLowerCase(), Number.isInteger(tour) ? tour : null);
       etat.panier = 'a_marquer'; ecrire(etat);
       marquerPanier();
     });
@@ -532,7 +539,9 @@
         afficherReponse(attente, r);
         // P9 : début de la réponse en haut (déjà fait à l'introduction : même position, rien ne bouge ; sinon fait maintenant).
         placer9();
-        etat.fil.push(r.blocs ? { qui: 'conseiller', texte: r.texte, blocs: r.blocs, sanitaire: r.sanitaire } : { qui: 'conseiller', texte: r.texte });
+        var entree = r.blocs ? { qui: 'conseiller', texte: r.texte, blocs: r.blocs, sanitaire: r.sanitaire } : { qui: 'conseiller', texte: r.texte };
+        if (Number.isInteger(r.tour)) entree.tour = r.tour; // P13 : relu après un changement de page
+        etat.fil.push(entree);
         etat.fil = etat.fil.slice(-40); ecrire(etat);
       }).then(function () { clearTimeout(relais); bouton.disabled = false; majFleche(); });
     }
@@ -608,7 +617,9 @@
           var s = f.corps || {};
           if (f.statut >= 400 || !s.texte_affiche) return { texte: ERREUR_TECHNIQUE };
           var blocs = Array.isArray(s.blocs) && s.blocs.length ? s.blocs : null;
-          return blocs ? { texte: s.texte_affiche, blocs: blocs, sanitaire: s.message_sanitaire || MENTION_SANITAIRE } : { texte: s.texte_affiche };
+          // P13 : numéro de la réponse dans la conversation (identifiant technique), pour relier un clic à cette réponse.
+          var t = Number.isInteger(s.tour) ? { tour: s.tour } : {};
+          return blocs ? Object.assign({ texte: s.texte_affiche, blocs: blocs, sanitaire: s.message_sanitaire || MENTION_SANITAIRE }, t) : Object.assign({ texte: s.texte_affiche }, t);
         });
       })
       .catch(function () { return { texte: ERREUR_TECHNIQUE }; });
