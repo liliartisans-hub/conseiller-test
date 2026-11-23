@@ -4,7 +4,9 @@
  * le fil et l'invitation déjà vue restent dans l'onglet (sessionStorage), effacés à sa fermeture. Si le conseiller est éteint
  * ou ne répond pas, rien ne s'affiche. Styles isolés (Shadow DOM) ; seul ajout dans la page : un lien discret sous
  * « Ajouter au panier » d'une fiche bouteille, et seulement si ce bouton est trouvé. La bulle s'efface tant qu'une fenêtre
- * de vérification de l'âge est visible. */
+ * de vérification de l'âge est visible. P10 : après un clic vers une fiche bouteille, le panier Shopify reçoit l'attribut
+ * « conseiller : oui » (requête de la boutique elle-même, cookie du panier géré par le navigateur, jamais lu ici) et la fonction
+ * compte le clic (handle seul). */
 (function (w, d) {
   'use strict';
   if (w.__conseillerMaisonDesire) return; // ligne collée deux fois : une seule bulle
@@ -69,6 +71,32 @@
     return echapper(s)
       .replace(new RegExp('\\[([^\\]]+)\\]\\((' + BOUTIQUE + ')\\)', 'g'), function (m, t, u) { return '<a href="' + u + '">' + t + '</a>'; })
       .replace(new RegExp('(^|[^"\\w])(' + BOUTIQUE + ')(?![\\w\\/-])', 'g'), function (m, avant, u) { return avant + '<a href="' + u + '">voir la bouteille</a>'; });
+  }
+
+  // P10 · Mesure, sans donnée personnelle ni texte de conversation, et seulement sur la boutique (jamais sur la page de test) :
+  // (1) attribut de panier Shopify « conseiller : oui » (visible sur la commande) après un clic vers une fiche bouteille ;
+  //     renvoyé une fois à la page suivante si la réponse n'est pas arrivée (la page a changé avant), puis plus jamais ;
+  // (2) clic compté par la fonction : le handle de la bouteille, rien d'autre (ni session, ni texte). Envois « keepalive » :
+  //     ils partent même si la page de la fiche s'ouvre aussitôt ; texte brut, sans cookie : aucune requête préalable.
+  var FICHE_SITE = /^https:\/\/(?:www\.)?maisondesire\.com\/products\/([a-z0-9][a-z0-9-]*)\/?$/i;
+  function surLaBoutique() {
+    var h = String((w.location && w.location.hostname) || '').toLowerCase();
+    return /(^|\.)maisondesire\.com$/.test(h) || /\.myshopify\.com$/.test(h);
+  }
+  function marquerPanier() {
+    if (!surLaBoutique()) return;
+    try {
+      w.fetch('/cart/update.js', { method: 'POST', keepalive: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ attributes: { conseiller: 'oui' } }) })
+        .then(function (r) { if (r && r.ok && etat.panier === 'a_marquer') { etat.panier = 'marque'; ecrire(etat); } }, function () {});
+    } catch (e) { /* panier indisponible : rien ne change pour le client */ }
+  }
+  function compterClic(handle) {
+    if (!surLaBoutique()) return;
+    try {
+      w.fetch(ADRESSE, { method: 'POST', keepalive: true, credentials: 'omit', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ clic: handle }) })
+        .then(null, function () {});
+    } catch (e) { /* comptage seulement */ }
   }
 
   // Pages : panier et paiement (jamais d'invitation), fiche bouteille (adresse de la fiche).
@@ -377,6 +405,16 @@
       var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
       if (a && lienDuSite(a)) replier();
     });
+    // P10 : clic vers une fiche bouteille (carte « Voir la bouteille » ou lien d'une réponse), même avec Ctrl : le clic est
+    // compté (handle seul) et le panier marqué « conseiller ».
+    panneau.addEventListener('click', function (e) {
+      var a = e && e.target && e.target.closest ? e.target.closest('a[href]') : null;
+      var m = a ? FICHE_SITE.exec(String(a.getAttribute('href') || '')) : null;
+      if (!m) return;
+      compterClic(m[1].toLowerCase());
+      etat.panier = 'a_marquer'; ecrire(etat);
+      marquerPanier();
+    });
     function cacherInvitation() { invitation.hidden = true; }
     // P8 : la bulle se cale sur l'écran VISIBLE. Sur Chrome Android, une page du site plus large que l'écran élargit la zone de
     // référence des éléments fixés : sans ce calage, le bouton partait hors de l'écran (visible seulement en dézoomant).
@@ -592,6 +630,7 @@
 
   // Démarrage : le conseiller est-il allumé ? (4 s au plus) Non, erreur ou silence → aucune bulle.
   function demarrer() {
+    if (etat.panier === 'a_marquer') marquerPanier(); // P10 : marquage pas encore confirmé (page changée avant la réponse)
     var fini = false;
     var minuterie = setTimeout(function () { fini = true; }, 4000);
     w.fetch(ADRESSE, { method: 'GET', credentials: 'omit' })
