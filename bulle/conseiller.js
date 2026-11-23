@@ -180,8 +180,7 @@
     '.carte .faits{font-size:13px;color:#6b6b6b;margin-top:3px}',
     '.carte .phrase{margin:8px 0 0;font-size:14px;line-height:1.5;color:#181414}',
     '.carte .bas{display:flex;flex-wrap:nowrap;align-items:center;gap:10px;margin-top:10px;white-space:nowrap}',
-    '.carte .etiquette,.carte .rare{display:inline-block;font-size:12px;border-radius:100px;padding:3px 10px;background:#f2f2f2;color:#000;font-weight:500}',
-    '.carte .rare{background:#fff;border:1px solid #000}',
+    '.carte .etiquette{display:inline-block;font-size:12px;border-radius:100px;padding:3px 10px;background:#f2f2f2;color:#000;font-weight:500}',
     '.carte a.voir{display:inline-block;font-size:13px;font-weight:400;border-radius:var(--md-rayon);padding:7px 14px;background:#000;color:#fff;text-decoration:none}',
     '.carte a.voir:hover,.carte a.voir:focus-visible{background:#333}',
     // P6 : « Appeler » et « E-mail » : petits liens discrets, sur la ligne de l'étiquette (jamais de gros boutons).
@@ -325,7 +324,7 @@
       var bas = [];
       if (c.boutique) bas.push(el('span', { classe: 'etiquette', texte: 'En boutique uniquement' }));
       else if (c.url && new RegExp('^' + BOUTIQUE + '$').test(c.url)) bas.push(el('a', { classe: 'voir', href: c.url, texte: 'Voir la bouteille' }));
-      if (c.rare) bas.push(el('span', { classe: 'rare', texte: 'Pièce rare' }));
+      // P12 bis : aucune étiquette de stock (stock Shopify non synchronisé avec la boutique), même si une ancienne réponse en portait.
       // P4 (3) → P6 : appeler ou écrire à la boutique, cartes « boutique » seulement : deux petits liens discrets sur la même
       // ligne que l'étiquette « En boutique uniquement » (libellé complet pour les lecteurs d'écran).
       if (c.boutique) {
